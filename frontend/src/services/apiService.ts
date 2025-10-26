@@ -1,6 +1,6 @@
 // API Service for communicating with the backend
 const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:3000/api'  // Development
+  ? 'http://localhost:3001/api'  // Development
   : 'https://your-production-api.com/api'; // Production
 
 class APIService {
@@ -41,6 +41,20 @@ class APIService {
 
   async loginAsGuest() {
     return this.request('/auth/guest', { method: 'POST' });
+  }
+
+  async loginWithEmail(credentials: any) {
+    return this.request('/auth/signin', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  }
+
+  async signupWithEmail(userInfo: any) {
+    return this.request('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(userInfo),
+    });
   }
 
   async loginWithGoogle(userData: any) {
@@ -90,7 +104,14 @@ class APIService {
   async getArticleById(id: string) {
     return this.request(`/news/${id}`);
   }
+  
+  // User preferences
+  async updatePreferences(preferences: any) {
+    return this.request('/user/preferences', {
+      method: 'PUT',
+      body: JSON.stringify(preferences),
+    });
+  }
 }
 
 export default new APIService();
-
