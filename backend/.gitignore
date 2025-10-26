@@ -1,0 +1,145 @@
+# ========================================
+# OS & Editor Files
+# ========================================
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*.swo
+*.tmp
+*.bak
+*.orig
+*~
+.idea/
+.vscode/
+*.code-workspace
+
+# ========================================
+# macOS System Files
+# ========================================
+.DS_Store
+.AppleDouble
+.LSOverride
+__MACOSX/
+
+# ========================================
+# Node.js / npm / yarn / pnpm
+# ========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+.pnpm-store/
+.cache/
+dist/
+build/
+.next/
+out/
+coverage/
+.babel-cache/
+.eslintcache
+.stylelintcache
+
+# ========================================
+# Next.js Specific
+# ========================================
+.next/
+out/
+.vercel/
+.next/cache/
+.next/static/
+
+# ========================================
+# Expo / React Native
+# ========================================
+# React Native / Expo build artifacts
+.expo/
+.expo-shared/
+.expo/web-build/
+.expo/packager-info.json
+.expo/devices.json
+.expo/metro-cache/
+.expo/android/
+.expo/ios/
+.expo/*/logs/
+web-build/
+android/
+ios/
+expo-build/
+fastlane/
+*.apk
+*.aab
+*.ipa
+
+# Metro bundler
+metro-cache/
+packager-cache-*
+npm-cache/
+
+# ========================================
+# Environment & Secrets
+# ========================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
+
+# ========================================
+# Miscellaneous
+# ========================================
+logs/
+*.log
+*.pid
+*.seed
+*.pid.lock
+tmp/
+temp/
+.cache/
+.history/
+coverage/
+*.tgz
+*.zip
+
+# ========================================
+# TypeScript / Babel / Build Artifacts
+# ========================================
+*.tsbuildinfo
+*.d.ts
+lib/
+tsconfig.tsbuildinfo
+
+# ========================================
+# Expo Managed Workflow (optional)
+# ========================================
+# Uncomment if you generate native folders manually:
+# ios/
+# android/
+
+# ========================================
+# Firebase / Google Services (if used)
+# ========================================
+google-services.json
+GoogleService-Info.plist
+
+# ========================================
+# Local testing / simulator artifacts
+# ========================================
+*.local
+*.iml
+*.xcworkspace
+*.xcuserstate
+*.xcuserdata/
+*.xcodeproj/
+DerivedData/
+
+# ========================================
+# Misc
+# ========================================
+.expo/
+.envrc

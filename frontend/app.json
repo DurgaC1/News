@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "NewsFlow",
+    "slug": "newsflow",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "newsflow",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#667eea"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.newsapp.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#667eea"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.newsapp.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+    ],
+    "extra": {
+      "newsApiKey": "YOUR_NEWS_API_KEY_HERE",
+      "googleClientId": "YOUR_GOOGLE_CLIENT_ID_HERE",
+      "facebookAppId": "YOUR_FACEBOOK_APP_ID_HERE"
+    }
+  }
+}

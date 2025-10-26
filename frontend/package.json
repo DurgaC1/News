@@ -1,0 +1,49 @@
+{
+  "name": "newsapp-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for NewsApp - React Native with Expo",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "keywords": [
+    "news",
+    "react-native",
+    "expo",
+    "mobile",
+    "frontend"
+  ],
+  "author": "NewsApp Team",
+  "license": "MIT",
+  "dependencies": {
+    "@expo/metro-runtime": "~4.0.1",
+    "@react-navigation/bottom-tabs": "^6.5.20",
+    "@react-navigation/native": "^6.1.17",
+    "@react-navigation/stack": "^6.3.29",
+    "expo": "^52.0.10",
+    "expo-asset": "~11.0.5",
+    "expo-auth-session": "~6.0.3",
+    "expo-constants": "~17.0.0",
+    "expo-status-bar": "~2.0.0",
+    "expo-web-browser": "~14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "18.3.1",
+    "react-native": "^0.76.9",
+    "react-native-gesture-handler": "~2.20.2",
+    "react-native-web": "~0.19.13"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.9",
+    "@types/react": "~18.3.12",
+    "babel-preset-expo": "~12.0.0",
+    "expo-module-scripts": "^5.0.0",
+    "typescript": "^5.3.3"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
