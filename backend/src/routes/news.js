@@ -4,6 +4,22 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
+// Base route for /api/news
+router.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Welcome to the News API',
+    endpoints: {
+      headlines: '/api/news/headlines',
+      search: '/api/news/search',
+      categories: '/api/news/categories',
+      sources: '/api/news/sources',
+      category: '/api/news/category/:category',
+      source: '/api/news/source/:source'
+    }
+  });
+});
+
 // Get top headlines
 router.get('/headlines', auth, async (req, res) => {
   try {

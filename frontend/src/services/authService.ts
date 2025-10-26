@@ -7,12 +7,10 @@ import apiService from './apiService';
 WebBrowser.maybeCompleteAuthSession();
 
 // Google OAuth configuration
-// Get your Google Client ID from: https://console.developers.google.com/
 const GOOGLE_CLIENT_ID = Constants.expoConfig?.extra?.googleClientId || 'YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com';
 const GOOGLE_REDIRECT_URI = AuthSession.makeRedirectUri();
 
 // Facebook OAuth configuration
-// Get your Facebook App ID from: https://developers.facebook.com/
 const FACEBOOK_APP_ID = Constants.expoConfig?.extra?.facebookAppId || 'YOUR_FACEBOOK_APP_ID_HERE';
 
 export class AuthService {
@@ -21,9 +19,7 @@ export class AuthService {
       const response = await apiService.loginAsDeveloper();
       
       if (response.success) {
-        // Set the token for future API calls
         apiService.setToken(response.token);
-        
         return {
           id: response.user.id,
           email: response.user.email,
@@ -31,15 +27,15 @@ export class AuthService {
           avatar: response.user.avatar,
           preferences: response.user.preferences,
           credits: response.user.credits,
-          savedArticles: [],
-          readingHistory: [],
+          savedArticles: response.user.savedArticles || [],
+          readingHistory: response.user.readingHistory || [],
         };
       }
       
-      return null;
-    } catch (error) {
-      console.error('Developer login error:', error);
-      return null;
+      throw new Error(response.error || 'Developer login failed');
+    } catch (error: any) {
+      console.error('Developer login error:', error.message);
+      throw new Error(error.message || 'Failed to login as developer');
     }
   }
 
@@ -48,9 +44,7 @@ export class AuthService {
       const response = await apiService.loginAsGuest();
       
       if (response.success) {
-        // Set the token for future API calls
         apiService.setToken(response.token);
-        
         return {
           id: response.user.id,
           email: response.user.email,
@@ -58,15 +52,15 @@ export class AuthService {
           avatar: response.user.avatar,
           preferences: response.user.preferences,
           credits: response.user.credits,
-          savedArticles: [],
-          readingHistory: [],
+          savedArticles: response.user.savedArticles || [],
+          readingHistory: response.user.readingHistory || [],
         };
       }
       
-      return null;
-    } catch (error) {
-      console.error('Guest login error:', error);
-      return null;
+      throw new Error(response.error || 'Guest login failed');
+    } catch (error: any) {
+      console.error('Guest login error:', error.message);
+      throw new Error(error.message || 'Failed to login as guest');
     }
   }
 
@@ -76,13 +70,22 @@ export class AuthService {
 
       if (response.success) {
         apiService.setToken(response.token);
-        return response.user;
+        return {
+          id: response.user.id,
+          email: response.user.email,
+          name: response.user.name,
+          avatar: response.user.avatar,
+          preferences: response.user.preferences,
+          credits: response.user.credits,
+          savedArticles: response.user.savedArticles || [],
+          readingHistory: response.user.readingHistory || [],
+        };
       }
 
-      return null;
-    } catch (error) {
-      console.error('Email login error:', error);
-      return null;
+      throw new Error(response.error || 'Email login failed');
+    } catch (error: any) {
+      console.error('Email login error:', error.message);
+      throw new Error(error.message || 'Failed to login with email');
     }
   }
 
@@ -92,13 +95,22 @@ export class AuthService {
 
       if (response.success) {
         apiService.setToken(response.token);
-        return response.user;
+        return {
+          id: response.user.id,
+          email: response.user.email,
+          name: response.user.name,
+          avatar: response.user.avatar,
+          preferences: response.user.preferences,
+          credits: response.user.credits,
+          savedArticles: response.user.savedArticles || [],
+          readingHistory: response.user.readingHistory || [],
+        };
       }
 
-      return null;
-    } catch (error) {
-      console.error('Email signup error:', error);
-      return null;
+      throw new Error(response.error || 'Email signup failed');
+    } catch (error: any) {
+      console.error('Email signup error:', error.message);
+      throw new Error(error.message || 'Failed to signup with email');
     }
   }
 
@@ -118,14 +130,13 @@ export class AuthService {
       });
 
       if (result.type === 'success') {
-        // Exchange code for token
         const tokenResponse = await AuthSession.exchangeCodeAsync(
           {
             clientId: GOOGLE_CLIENT_ID,
             code: result.params.code || '',
             redirectUri: GOOGLE_REDIRECT_URI,
             extraParams: {
-              code_verifier: request.codeVerifier,
+              code_verifier: request.codeVerifier || '',
             },
           },
           {
@@ -133,13 +144,15 @@ export class AuthService {
           }
         );
 
-        // Get user info
         const userInfoResponse = await fetch(
           `https://www.googleapis.com/oauth2/v2/userinfo?access_token=${tokenResponse.accessToken}`
         );
         const userInfo = await userInfoResponse.json();
 
-        // Send to backend
+        if (!userInfo.email || !userInfo.name) {
+          throw new Error('Google user info missing email or name');
+        }
+
         const response = await apiService.loginWithGoogle({
           email: userInfo.email,
           name: userInfo.name,
@@ -149,7 +162,6 @@ export class AuthService {
 
         if (response.success) {
           apiService.setToken(response.token);
-          
           return {
             id: response.user.id,
             email: response.user.email,
@@ -157,16 +169,18 @@ export class AuthService {
             avatar: response.user.avatar,
             preferences: response.user.preferences,
             credits: response.user.credits,
-            savedArticles: [],
-            readingHistory: [],
+            savedArticles: response.user.savedArticles || [],
+            readingHistory: response.user.readingHistory || [],
           };
         }
+
+        throw new Error(response.error || 'Google login failed');
       }
 
-      return null;
-    } catch (error) {
-      console.error('Google login error:', error);
-      return null;
+      throw new Error('Google OAuth flow cancelled');
+    } catch (error: any) {
+      console.error('Google login error:', error.message);
+      throw new Error(error.message || 'Failed to login with Google');
     }
   }
 
@@ -185,23 +199,24 @@ export class AuthService {
       });
 
       if (result.type === 'success' && result.authentication?.accessToken) {
-        // Get user info
         const userInfoResponse = await fetch(
           `https://graph.facebook.com/me?fields=id,name,email,picture&access_token=${result.authentication.accessToken}`
         );
         const userInfo = await userInfoResponse.json();
 
-        // Send to backend
+        if (!userInfo.email || !userInfo.name) {
+          throw new Error('Facebook user info missing email or name');
+        }
+
         const response = await apiService.loginWithFacebook({
-          email: userInfo.email || '',
+          email: userInfo.email,
           name: userInfo.name,
-          picture: userInfo.picture,
+          picture: userInfo.picture?.data?.url || '', // Align with backend expectation
           facebookId: userInfo.id,
         });
 
         if (response.success) {
           apiService.setToken(response.token);
-          
           return {
             id: response.user.id,
             email: response.user.email,
@@ -209,21 +224,22 @@ export class AuthService {
             avatar: response.user.avatar,
             preferences: response.user.preferences,
             credits: response.user.credits,
-            savedArticles: [],
-            readingHistory: [],
+            savedArticles: response.user.savedArticles || [],
+            readingHistory: response.user.readingHistory || [],
           };
         }
+
+        throw new Error(response.error || 'Facebook login failed');
       }
 
-      return null;
-    } catch (error) {
-      console.error('Facebook login error:', error);
-      return null;
+      throw new Error('Facebook OAuth flow cancelled');
+    } catch (error: any) {
+      console.error('Facebook login error:', error.message);
+      throw new Error(error.message || 'Failed to login with Facebook');
     }
   }
 
   static async logout(): Promise<void> {
-    // Clear token
     apiService.setToken(null);
     console.log('Logged out user');
   }
@@ -240,15 +256,15 @@ export class AuthService {
           avatar: response.user.avatar,
           preferences: response.user.preferences,
           credits: response.user.credits,
-          savedArticles: [],
-          readingHistory: [],
+          savedArticles: response.user.savedArticles || [],
+          readingHistory: response.user.readingHistory || [],
         };
       }
       
-      return null;
-    } catch (error) {
-      console.error('Token verification error:', error);
-      return null;
+      throw new Error(response.error || 'Token verification failed');
+    } catch (error: any) {
+      console.error('Token verification error:', error.message);
+      throw new Error(error.message || 'Failed to verify token');
     }
   }
 
@@ -269,10 +285,157 @@ export class AuthService {
         };
       }
       
-      return null;
-    } catch (error) {
-      console.error('Update preferences error:', error);
-      return null;
+      throw new Error(response.error || 'Update preferences failed');
+    } catch (error: any) {
+      console.error('Update preferences error:', error.message);
+      throw new Error(error.message || 'Failed to update preferences');
+    }
+  }
+
+  static async getUserProfile(): Promise<User | null> {
+    try {
+      const response = await apiService.getUserProfile();
+      
+      if (response.success) {
+        return {
+          id: response.user.id,
+          email: response.user.email,
+          name: response.user.name,
+          avatar: response.user.avatar,
+          preferences: response.user.preferences,
+          credits: response.user.credits,
+          savedArticles: response.user.savedArticles || [],
+          readingHistory: response.user.readingHistory || [],
+        };
+      }
+      
+      throw new Error(response.error || 'Failed to fetch user profile');
+    } catch (error: any) {
+      console.error('Get user profile error:', error.message);
+      throw new Error(error.message || 'Failed to fetch user profile');
+    }
+  }
+
+  static async updateProfile(profile: { name?: string; avatar?: string }): Promise<User | null> {
+    try {
+      const response = await apiService.updateProfile(profile);
+      
+      if (response.success) {
+        return {
+          id: response.user.id,
+          email: response.user.email,
+          name: response.user.name,
+          avatar: response.user.avatar,
+          preferences: response.user.preferences,
+          credits: response.user.credits,
+          savedArticles: response.user.savedArticles || [],
+          readingHistory: response.user.readingHistory || [],
+        };
+      }
+      
+      throw new Error(response.error || 'Update profile failed');
+    } catch (error: any) {
+      console.error('Update profile error:', error.message);
+      throw new Error(error.message || 'Failed to update profile');
+    }
+  }
+
+  static async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string } | null> {
+    try {
+      const response = await apiService.changePassword({ currentPassword, newPassword });
+      
+      if (response.success) {
+        return { message: response.message };
+      }
+      
+      throw new Error(response.error || 'Change password failed');
+    } catch (error: any) {
+      console.error('Change password error:', error.message);
+      throw new Error(error.message || 'Failed to change password');
+    }
+  }
+
+  static async saveArticle(articleId: string): Promise<{ message: string; savedArticles: string[] } | null> {
+    try {
+      const response = await apiService.saveArticle(articleId);
+      
+      if (response.success) {
+        return {
+          message: response.message,
+          savedArticles: response.savedArticles || [],
+        };
+      }
+      
+      throw new Error(response.error || 'Save article failed');
+    } catch (error: any) {
+      console.error('Save article error:', error.message);
+      throw new Error(error.message || 'Failed to save article');
+    }
+  }
+
+  static async removeSavedArticle(articleId: string): Promise<{ message: string; savedArticles: string[] } | null> {
+    try {
+      const response = await apiService.removeSavedArticle(articleId);
+      
+      if (response.success) {
+        return {
+          message: response.message,
+          savedArticles: response.savedArticles || [],
+        };
+      }
+      
+      throw new Error(response.error || 'Remove saved article failed');
+    } catch (error: any) {
+      console.error('Remove saved article error:', error.message);
+      throw new Error(error.message || 'Failed to remove saved article');
+    }
+  }
+
+  static async addToReadingHistory(articleId: string): Promise<{ message: string; readingHistory: { articleId: string; readAt: string }[] } | null> {
+    try {
+      const response = await apiService.addToReadingHistory(articleId);
+      
+      if (response.success) {
+        return {
+          message: response.message,
+          readingHistory: response.readingHistory || [],
+        };
+      }
+      
+      throw new Error(response.error || 'Add to reading history failed');
+    } catch (error: any) {
+      console.error('Add to reading history error:', error.message);
+      throw new Error(error.message || 'Failed to add to reading history');
+    }
+  }
+
+  static async getSavedArticles(): Promise<{ articles: string[] } | null> {
+    try {
+      const response = await apiService.getSavedArticles();
+      
+      if (response.success) {
+        return { articles: response.articles || [] };
+      }
+      
+      throw new Error(response.error || 'Fetch saved articles failed');
+    } catch (error: any) {
+      console.error('Fetch saved articles error:', error.message);
+      throw new Error(error.message || 'Failed to fetch saved articles');
+    }
+  }
+
+  static async getReadingHistory(): Promise<{ readingHistory: { articleId: string; readAt: string }[] } | null> {
+    try {
+      const response = await apiService.getReadingHistory();
+      
+      if (response.success) {
+        return { readingHistory: response.readingHistory || [] };
+      }
+      
+      throw new Error(response.error || 'Fetch reading history failed');
+    } catch (error: any) {
+      console.error('Fetch reading history error:', error.message);
+      throw new Error(error.message || 'Failed to fetch reading history');
     }
   }
 }

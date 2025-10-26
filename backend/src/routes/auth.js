@@ -11,6 +11,21 @@ const generateToken = (userId) => {
   });
 };
 
+// Base route for GET /api/auth/signup
+router.get('/signup', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Signup endpoint for creating a new user account',
+    method: 'POST',
+    requiredFields: ['email', 'password', 'name'],
+    example: {
+      email: 'user@example.com',
+      password: 'secure123',
+      name: 'John Doe'
+    }
+  });
+});
+
 // Sign up with email and password
 router.post('/signup', async (req, res) => {
   try {

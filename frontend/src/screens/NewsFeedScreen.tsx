@@ -23,33 +23,27 @@ interface NewsFeedScreenProps {
 
 const NewsFeedScreen: React.FC<NewsFeedScreenProps> = ({ navigation }) => {
   const { articles, isLoading, error, refreshNews, saveArticle, addToHistory } = useNews();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { addCredits } = useCredits();
-  
   const [currentIndex, setCurrentIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'card' | 'newspaper'>('card');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    // Load news based on user preferences when component mounts
     refreshNews();
-    
-    // Stop speech when component unmounts
     return () => {
       if (Speech.isSpeakingAsync()) {
         Speech.stop();
       }
     };
-  }, []);
+  }, [refreshNews]);
 
   const handleViewableItemsChanged = ({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0) {
       const index = viewableItems[0].index;
       if (index !== null && index !== undefined) {
         setCurrentIndex(index);
-        // Add to reading history when article is viewed
         if (articles[index]) {
           addToHistory(articles[index].id);
         }
@@ -57,9 +51,7 @@ const NewsFeedScreen: React.FC<NewsFeedScreenProps> = ({ navigation }) => {
     }
   };
 
-  const viewabilityConfig = {
-    itemVisiblePercentThreshold: 50
-  };
+  const viewabilityConfig = { itemVisiblePercentThreshold: 50 };
 
   const handleSave = (articleId: string) => {
     saveArticle(articleId);
@@ -86,7 +78,7 @@ const NewsFeedScreen: React.FC<NewsFeedScreenProps> = ({ navigation }) => {
   };
 
   const handleViewModeChange = () => {
-    setViewMode(prev => prev === 'card' ? 'newspaper' : 'card');
+    setViewMode(prev => (prev === 'card' ? 'newspaper' : 'card'));
   };
 
   const handleEarnCredits = (articleId: string) => {
@@ -98,7 +90,6 @@ const NewsFeedScreen: React.FC<NewsFeedScreenProps> = ({ navigation }) => {
 
   const renderArticle = ({ item }: { item: any }) => {
     const isSaved = user?.savedArticles.includes(item.id) || false;
-    
     return (
       <ArticleCard
         article={item}
@@ -138,8 +129,8 @@ const NewsFeedScreen: React.FC<NewsFeedScreenProps> = ({ navigation }) => {
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyText}>No articles found</Text>
         <Text style={styles.emptyMessage}>Try adjusting your preferences or check back later</Text>
-        <TouchableOpacity 
-          style={styles.preferencesButton} 
+        <TouchableOpacity
+          style={styles.preferencesButton}
           onPress={() => navigation.navigate('Preferences')}
         >
           <Text style={styles.preferencesButtonText}>Edit Preferences</Text>
@@ -150,6 +141,13 @@ const NewsFeedScreen: React.FC<NewsFeedScreenProps> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>NewsFlow</Text>
+        <View style={styles.userInfo}>
+          <Text style={styles.userName}>{user?.name}</Text>
+          <Text style={styles.credits}>Credits: {user?.credits || 0}</Text>
+        </View>
+      </View>
       <FlatList
         ref={flatListRef}
         data={articles}
@@ -173,18 +171,17 @@ const NewsFeedScreen: React.FC<NewsFeedScreenProps> = ({ navigation }) => {
         onRefresh={refreshNews}
         refreshing={isLoading}
       />
-      
       <View style={styles.pagination}>
         {articles.map((_, index) => (
           <View
             key={index}
-            style={[
-              styles.paginationDot,
-              currentIndex === index && styles.paginationDotActive,
-            ]}
+            style={[styles.paginationDot, currentIndex === index && styles.paginationDotActive]}
           />
         ))}
       </View>
+      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+        <Text style={styles.logoutButtonText}>Logout</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -193,6 +190,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+  },
+  header: {
+    backgroundColor: '#667eea',
+    padding: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  userInfo: {
+    alignItems: 'flex-end',
+  },
+  userName: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  credits: {
+    color: '#fff',
+    fontSize: 14,
+    marginTop: 5,
   },
   loadingContainer: {
     flex: 1,
@@ -229,6 +250,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
+    pointerEvents: 'auto', // Explicitly set
   },
   retryButtonText: {
     color: '#fff',
@@ -259,6 +281,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
+    pointerEvents: 'auto', // Explicitly set
   },
   preferencesButtonText: {
     color: '#fff',
@@ -285,6 +308,19 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+  },
+  logoutButton: {
+    backgroundColor: '#ff4757',
+    margin: 20,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    pointerEvents: 'auto', // Explicitly set
+  },
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

@@ -1,62 +1,93 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, TextInput, Alert } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthService } from '../services/authService';
+import { useNavigation } from '@react-navigation/native';
 
 const LoginScreen: React.FC = () => {
   const { login } = useAuth();
+  const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
 
   const handleGuestLogin = async () => {
-    const user = await AuthService.loginAsGuest();
-    if (user) {
-      login(user);
+    try {
+      const user = await AuthService.loginAsGuest();
+      if (user) {
+        login(user);
+        navigation.replace('NewsFeed');
+      } else {
+        Alert.alert('Guest Login Error', 'Could not log in as guest. Please try again.');
+      }
+    } catch (error: any) {
+      Alert.alert('Guest Login Error', error.message || 'Failed to log in as guest');
     }
   };
 
   const handleDeveloperLogin = async () => {
-    const user = await AuthService.loginAsDeveloper();
-    if (user) {
-      login(user);
+    try {
+      const user = await AuthService.loginAsDeveloper();
+      if (user) {
+        login(user);
+        navigation.replace('NewsFeed');
+      } else {
+        Alert.alert('Developer Login Error', 'Could not log in as developer. Please try again.');
+      }
+    } catch (error: any) {
+      Alert.alert('Developer Login Error', error.message || 'Failed to log in as developer');
     }
   };
 
   const handleGoogleLogin = async () => {
-    const user = await AuthService.loginWithGoogle();
-    if (user) {
-      login(user);
+    try {
+      const user = await AuthService.loginWithGoogle();
+      if (user) {
+        login(user);
+        navigation.replace('Preferences', { isFirstTime: true });
+      } else {
+        Alert.alert('Google Login Error', 'Could not log in with Google. Please try again.');
+      }
+    } catch (error: any) {
+      Alert.alert('Google Login Error', error.message || 'Failed to log in with Google');
     }
   };
 
   const handleFacebookLogin = async () => {
-    const user = await AuthService.loginWithFacebook();
-    if (user) {
-      login(user);
+    try {
+      const user = await AuthService.loginWithFacebook();
+      if (user) {
+        login(user);
+        navigation.replace('Preferences', { isFirstTime: true });
+      } else {
+        Alert.alert('Facebook Login Error', 'Could not log in with Facebook. Please try again.');
+      }
+    } catch (error: any) {
+      Alert.alert('Facebook Login Error', error.message || 'Failed to log in with Facebook');
     }
   };
 
   const handleEmailAuth = async () => {
-    if (isSignUp) {
-      if (!name) {
-        Alert.alert('Sign Up Error', 'Please enter your name.');
-        return;
-      }
-      const user = await AuthService.signupWithEmail(name, email, password);
+    if (isSignUp && !name) {
+      Alert.alert('Sign Up Error', 'Please enter your name.');
+      return;
+    }
+    try {
+      const user = isSignUp
+        ? await AuthService.signupWithEmail(name, email, password)
+        : await AuthService.loginWithEmail(email, password);
       if (user) {
         login(user);
+        navigation.replace(isSignUp ? 'Preferences' : 'NewsFeed', { isFirstTime: isSignUp });
       } else {
-        Alert.alert('Sign Up Error', 'Could not create an account. Please try again.');
+        Alert.alert(isSignUp ? 'Sign Up Error' : 'Sign In Error', 'Authentication failed. Please try again.');
       }
-    } else {
-      const user = await AuthService.loginWithEmail(email, password);
-      if (user) {
-        login(user);
-      } else {
-        Alert.alert('Sign In Error', 'Invalid email or password. Please try again.');
-      }
+    } catch (error: any) {
+      Alert.alert(
+        isSignUp ? 'Sign Up Error' : 'Sign In Error',
+        error.message || (isSignUp ? 'Could not create account' : 'Invalid email or password')
+      );
     }
   };
 
@@ -66,7 +97,6 @@ const LoginScreen: React.FC = () => {
         <View style={styles.logoContainer}>
           <Text style={styles.logoText}>N</Text>
         </View>
-        
         <Text style={styles.title}>NewsFlow</Text>
         <Text style={styles.subtitle}>Stay informed, swipe through stories</Text>
 
@@ -104,7 +134,7 @@ const LoginScreen: React.FC = () => {
             {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </Text>
         </TouchableOpacity>
-        
+
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
           <Text style={styles.dividerText}>or</Text>
@@ -112,20 +142,14 @@ const LoginScreen: React.FC = () => {
         </View>
 
         <View style={styles.socialButtonsContainer}>
-          <TouchableOpacity 
-            style={[styles.socialButton, styles.googleButton]} 
-            onPress={handleGoogleLogin}
-          >
+          <TouchableOpacity style={[styles.socialButton, styles.googleButton]} onPress={handleGoogleLogin}>
             <View style={styles.socialIconContainer}>
               <Text style={styles.socialIcon}>G</Text>
             </View>
             <Text style={styles.socialButtonText}>Continue with Google</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={[styles.socialButton, styles.facebookButton]} 
-            onPress={handleFacebookLogin}
-          >
+          <TouchableOpacity style={[styles.socialButton, styles.facebookButton]} onPress={handleFacebookLogin}>
             <View style={styles.socialIconContainer}>
               <Text style={[styles.socialIcon, styles.fbIcon]}>f</Text>
             </View>
@@ -214,6 +238,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+    pointerEvents: 'auto', // Explicitly set to avoid warning
   },
   googleButton: {
     backgroundColor: '#ffffff',
@@ -275,6 +300,7 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 3,
     marginBottom: 10,
+    pointerEvents: 'auto', // Explicitly set to avoid warning
   },
   buttonText: {
     color: '#fff',
@@ -290,6 +316,7 @@ const styles = StyleSheet.create({
   developerButton: {
     marginTop: 15,
     padding: 10,
+    pointerEvents: 'auto', // Explicitly set to avoid warning
   },
   developerButtonText: {
     color: '#6c757d',

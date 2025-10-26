@@ -312,7 +312,7 @@ router.post("/reading-history", auth, async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: "Failed to add to reading history",
+      error: " DAV to add to reading history",
       message: error.message,
     });
   }
@@ -321,7 +321,7 @@ router.post("/reading-history", auth, async (req, res) => {
 // Get saved articles
 router.get("/saved-articles", auth, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).populate("savedArticles");
+    const user = await User.findById(req.user.userId).select("-password");
 
     if (!user) {
       return res.status(404).json({
