@@ -1,10 +1,14 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, SafeAreaView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInput, Alert } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { AuthService } from '../services/authService';
 
 const LoginScreen: React.FC = () => {
   const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const handleGuestLogin = async () => {
     const user = await AuthService.loginAsGuest();
@@ -34,6 +38,28 @@ const LoginScreen: React.FC = () => {
     }
   };
 
+  const handleEmailAuth = async () => {
+    if (isSignUp) {
+      if (!name) {
+        Alert.alert('Sign Up Error', 'Please enter your name.');
+        return;
+      }
+      const user = await AuthService.signupWithEmail(name, email, password);
+      if (user) {
+        login(user);
+      } else {
+        Alert.alert('Sign Up Error', 'Could not create an account. Please try again.');
+      }
+    } else {
+      const user = await AuthService.loginWithEmail(email, password);
+      if (user) {
+        login(user);
+      } else {
+        Alert.alert('Sign In Error', 'Invalid email or password. Please try again.');
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -43,7 +69,48 @@ const LoginScreen: React.FC = () => {
         
         <Text style={styles.title}>NewsFlow</Text>
         <Text style={styles.subtitle}>Stay informed, swipe through stories</Text>
+
+        {isSignUp && (
+          <TextInput
+            style={styles.input}
+            placeholder="Name"
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+          />
+        )}
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+
+        <TouchableOpacity style={styles.button} onPress={handleEmailAuth}>
+          <Text style={styles.buttonText}>{isSignUp ? 'Sign Up' : 'Sign In'}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)}>
+          <Text style={styles.toggleText}>
+            {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+          </Text>
+        </TouchableOpacity>
         
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
         <View style={styles.socialButtonsContainer}>
           <TouchableOpacity 
             style={[styles.socialButton, styles.googleButton]} 
@@ -64,12 +131,6 @@ const LoginScreen: React.FC = () => {
             </View>
             <Text style={styles.socialButtonText}>Continue with Facebook</Text>
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.divider}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or</Text>
-          <View style={styles.dividerLine} />
         </View>
 
         <TouchableOpacity style={styles.button} onPress={handleGuestLogin}>
@@ -125,6 +186,17 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     marginBottom: 40,
     textAlign: 'center',
+  },
+  input: {
+    width: '100%',
+    maxWidth: 320,
+    height: 50,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   socialButtonsContainer: {
     width: '100%',
@@ -202,11 +274,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 3,
+    marginBottom: 10,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  toggleText: {
+    color: '#4263eb',
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 20,
   },
   developerButton: {
     marginTop: 15,
@@ -219,4 +298,3 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
-

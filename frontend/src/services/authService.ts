@@ -70,6 +70,38 @@ export class AuthService {
     }
   }
 
+  static async loginWithEmail(email: string, password: string): Promise<User | null> {
+    try {
+      const response = await apiService.loginWithEmail({ email, password });
+
+      if (response.success) {
+        apiService.setToken(response.token);
+        return response.user;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Email login error:', error);
+      return null;
+    }
+  }
+
+  static async signupWithEmail(name: string, email: string, password: string): Promise<User | null> {
+    try {
+      const response = await apiService.signupWithEmail({ name, email, password });
+
+      if (response.success) {
+        apiService.setToken(response.token);
+        return response.user;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Email signup error:', error);
+      return null;
+    }
+  }
+
   static async loginWithGoogle(): Promise<User | null> {
     try {
       const request = new AuthSession.AuthRequest({
