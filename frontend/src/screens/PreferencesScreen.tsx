@@ -1,322 +1,354 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  SafeAreaView 
-} from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
-import { NewsPreferences } from '../types';
-import { AuthService } from '../services/authService';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+  Animated,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+import { NewsPreferences } from "../types";
+import { MockDataService } from "../services/mockDataService";
 
-const categories = [
-  { id: 'business', name: 'Business' },
-  { id: 'entertainment', name: 'Entertainment' },
-  { id: 'health', name: 'Health' },
-  { id: 'science', name: 'Science' },
-  { id: 'sports', name: 'Sports' },
-  { id: 'technology', name: 'Technology' },
-  { id: 'politics', name: 'Politics' },
-  { id: 'world', name: 'World' },
-];
-
-const sources = [
-  { id: 'bbc-news', name: 'BBC News' },
-  { id: 'cnn', name: 'CNN' },
-  { id: 'the-verge', name: 'The Verge' },
-  { id: 'wired', name: 'Wired' },
-  { id: 'time', name: 'TIME' },
-  { id: 'reuters', name: 'Reuters' },
-  { id: 'associated-press', name: 'Associated Press' },
-  { id: 'techcrunch', name: 'TechCrunch' },
-];
-
-const languages = [
-  { id: 'en', name: 'English' },
-  { id: 'es', name: 'Spanish' },
-  { id: 'fr', name: 'French' },
-  { id: 'de', name: 'German' },
-];
-
-const countries = [
-  { id: 'us', name: 'United States' },
-  { id: 'gb', name: 'United Kingdom' },
-  { id: 'ca', name: 'Canada' },
-  { id: 'au', name: 'Australia' },
-  { id: 'in', name: 'India' },
-];
+const { width } = Dimensions.get("window");
 
 interface PreferencesScreenProps {
-  navigation: any;
-  route: {
-    params?: {
-      isFirstTime?: boolean;
-    };
-  };
+  onComplete: (preferences: NewsPreferences) => void;
+  initialPreferences?: NewsPreferences;
 }
 
-const PreferencesScreen: React.FC<PreferencesScreenProps> = ({ navigation, route }) => {
-  const { user, login } = useAuth();
-  const isFirstTime = route.params?.isFirstTime || false;
-  
-  const [preferences, setPreferences] = useState<NewsPreferences>(
-    user?.preferences || {
-      categories: [],
-      sources: [],
-      languages: ['en'],
-      countries: ['us'],
-    }
-  );
+const PreferencesScreen: React.FC<PreferencesScreenProps> = ({
+  onComplete,
+  initialPreferences,
+}) => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [preferences, setPreferences] = useState<NewsPreferences>({
+    categories: initialPreferences?.categories || [],
+    sources: initialPreferences?.sources || [],
+    languages: initialPreferences?.languages || ["en"],
+    countries: initialPreferences?.countries || ["us"],
+  });
 
-  const toggleCategory = (categoryId: string) => {
-    setPreferences(prev => {
-      const categories = prev.categories.includes(categoryId)
-        ? prev.categories.filter(id => id !== categoryId)
-        : [...prev.categories, categoryId];
-      
-      return { ...prev, categories };
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [currentStep]);
+
+  const steps = [
+    {
+      title: "Choose Your Interests",
+      subtitle: "Select the topics you want to see in your news feed",
+      type: "categories" as keyof NewsPreferences,
+      options: MockDataService.getCategories(),
+    },
+    {
+      title: "Pick Your Sources",
+      subtitle: "Choose your preferred news sources",
+      type: "sources" as keyof NewsPreferences,
+      options: MockDataService.getSources(),
+    },
+    {
+      title: "Language & Region",
+      subtitle: "Set your language and country preferences",
+      type: "languages" as keyof NewsPreferences,
+      options: [
+        "English",
+        "Spanish",
+        "French",
+        "German",
+        "Chinese",
+        "Japanese",
+      ],
+    },
+  ];
+
+  const toggleSelection = (type: keyof NewsPreferences, value: string) => {
+    setPreferences((prev) => {
+      const currentArray = prev[type] as string[];
+      const newArray = currentArray.includes(value)
+        ? currentArray.filter((item) => item !== value)
+        : [...currentArray, value];
+
+      return {
+        ...prev,
+        [type]: newArray,
+      };
     });
   };
 
-  const toggleSource = (sourceId: string) => {
-    setPreferences(prev => {
-      const sources = prev.sources.includes(sourceId)
-        ? prev.sources.filter(id => id !== sourceId)
-        : [...prev.sources, sourceId];
-      
-      return { ...prev, sources };
-    });
-  };
-
-  const toggleLanguage = (languageId: string) => {
-    setPreferences(prev => {
-      const languages = prev.languages.includes(languageId)
-        ? prev.languages.filter(id => id !== languageId)
-        : [...prev.languages, languageId];
-      
-      return { ...prev, languages };
-    });
-  };
-
-  const toggleCountry = (countryId: string) => {
-    setPreferences(prev => {
-      const countries = prev.countries.includes(countryId)
-        ? prev.countries.filter(id => id !== countryId)
-        : [...prev.countries, countryId];
-      
-      return { ...prev, countries };
-    });
-  };
-
-  const handleSave = async () => {
-    try {
-      // Ensure at least one category is selected
-      if (preferences.categories.length === 0) {
-        // Add a default category if none selected
-        setPreferences(prev => ({
-          ...prev,
-          categories: ['general'],
-        }));
-      }
-
-      if (user) {
-        // Update user preferences in backend
-        const updatedUser = await AuthService.updatePreferences(preferences);
-        if (updatedUser) {
-          login(updatedUser);
-        }
-      }
-
-      if (isFirstTime) {
-        // Navigate to the main app if this is first-time setup
-        navigation.replace('Main');
-      } else {
-        // Go back to previous screen
-        navigation.goBack();
-      }
-    } catch (error) {
-      console.error('Failed to save preferences:', error);
+  const nextStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      onComplete(preferences);
     }
   };
 
-  const renderSelectionItem = (
-    item: { id: string; name: string },
-    isSelected: boolean,
-    onToggle: (id: string) => void
-  ) => (
-    <TouchableOpacity
-      key={item.id}
-      style={[
-        styles.selectionItem,
-        isSelected && styles.selectedItem
-      ]}
-      onPress={() => onToggle(item.id)}
-    >
-      <Text style={[
-        styles.selectionItemText,
-        isSelected && styles.selectedItemText
-      ]}>
-        {item.name}
-      </Text>
-    </TouchableOpacity>
-  );
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const skipStep = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      onComplete(preferences);
+    }
+  };
+
+  const currentStepData = steps[currentStep];
+  const selectedCount = (preferences[currentStepData.type] as string[]).length;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>
-          {isFirstTime ? 'Set Your Preferences' : 'Edit Preferences'}
-        </Text>
-        <Text style={styles.headerSubtitle}>
-          Customize your news feed to see what matters to you
-        </Text>
-      </View>
-
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Categories</Text>
-          <Text style={styles.sectionSubtitle}>Select topics you're interested in</Text>
-          <View style={styles.selectionGrid}>
-            {categories.map(category => renderSelectionItem(
-              category,
-              preferences.categories.includes(category.id),
-              toggleCategory
-            ))}
+    <LinearGradient colors={["#667eea", "#764ba2"]} style={styles.container}>
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.stepIndicator}>
+            {currentStep + 1} of {steps.length}
+          </Text>
+          <View style={styles.progressBar}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${((currentStep + 1) / steps.length) * 100}%` },
+              ]}
+            />
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Sources</Text>
-          <Text style={styles.sectionSubtitle}>Choose your preferred news sources</Text>
-          <View style={styles.selectionGrid}>
-            {sources.map(source => renderSelectionItem(
-              source,
-              preferences.sources.includes(source.id),
-              toggleSource
-            ))}
-          </View>
-        </View>
+        <Animated.View
+          style={[
+            styles.stepContent,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <Text style={styles.title}>{currentStepData.title}</Text>
+          <Text style={styles.subtitle}>{currentStepData.subtitle}</Text>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Languages</Text>
-          <Text style={styles.sectionSubtitle}>Select languages for your news</Text>
-          <View style={styles.selectionGrid}>
-            {languages.map(language => renderSelectionItem(
-              language,
-              preferences.languages.includes(language.id),
-              toggleLanguage
-            ))}
-          </View>
-        </View>
+          <ScrollView
+            style={styles.optionsContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            {currentStepData.options.map((option, index) => {
+              const isSelected = (
+                preferences[currentStepData.type] as string[]
+              ).includes(option);
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Countries</Text>
-          <Text style={styles.sectionSubtitle}>Choose regions you want news from</Text>
-          <View style={styles.selectionGrid}>
-            {countries.map(country => renderSelectionItem(
-              country,
-              preferences.countries.includes(country.id),
-              toggleCountry
-            ))}
+              return (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    styles.optionItem,
+                    isSelected && styles.selectedOption,
+                  ]}
+                  onPress={() => toggleSelection(currentStepData.type, option)}
+                >
+                  <Text
+                    style={[
+                      styles.optionText,
+                      isSelected && styles.selectedOptionText,
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                  {isSelected && (
+                    <Ionicons name="checkmark-circle" size={24} color="#fff" />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          <View style={styles.selectionInfo}>
+            <Text style={styles.selectionText}>
+              {selectedCount} {currentStepData.type} selected
+            </Text>
           </View>
-        </View>
+        </Animated.View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>
-              {isFirstTime ? 'Get Started' : 'Save Preferences'}
-            </Text>
-          </TouchableOpacity>
+          {currentStep > 0 && (
+            <TouchableOpacity style={styles.backButton} onPress={prevStep}>
+              <Ionicons name="chevron-back" size={24} color="#667eea" />
+              <Text style={styles.backButtonText}>Back</Text>
+            </TouchableOpacity>
+          )}
+
+          <View style={styles.rightButtons}>
+            <TouchableOpacity style={styles.skipButton} onPress={skipStep}>
+              <Text style={styles.skipButtonText}>Skip</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.nextButton,
+                selectedCount === 0 && styles.disabledButton,
+              ]}
+              onPress={nextStep}
+              disabled={selectedCount === 0}
+            >
+              <Text style={styles.nextButtonText}>
+                {currentStep === steps.length - 1 ? "Complete" : "Next"}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: '#4263eb',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 5,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
   container: {
     flex: 1,
-    padding: 20,
   },
-  section: {
-    marginBottom: 25,
+  content: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 60,
   },
-  sectionTitle: {
+  header: {
+    marginBottom: 40,
+  },
+  stepIndicator: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    borderRadius: 2,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 2,
+  },
+  stepContent: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  subtitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1a1a2e',
-    marginBottom: 5,
+    color: "rgba(255,255,255,0.8)",
+    textAlign: "center",
+    marginBottom: 40,
   },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginBottom: 15,
+  optionsContainer: {
+    flex: 1,
+    marginBottom: 20,
   },
-  selectionGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  optionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: "transparent",
   },
-  selectionItem: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    margin: 5,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+  selectedOption: {
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderColor: "#fff",
   },
-  selectedItem: {
-    backgroundColor: '#4263eb',
-    borderColor: '#4263eb',
+  optionText: {
+    fontSize: 18,
+    color: "rgba(255,255,255,0.8)",
+    fontWeight: "500",
   },
-  selectionItemText: {
-    color: '#333',
-    fontSize: 14,
+  selectedOptionText: {
+    color: "#fff",
+    fontWeight: "600",
   },
-  selectedItemText: {
-    color: '#fff',
+  selectionInfo: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  selectionText: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 16,
   },
   buttonContainer: {
-    marginVertical: 30,
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingBottom: 40,
   },
-  saveButton: {
-    backgroundColor: '#4263eb',
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    width: '100%',
-    alignItems: 'center',
-    shadowColor: '#4263eb',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 3,
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
   },
-  saveButtonText: {
-    color: '#fff',
+  backButtonText: {
+    color: "#667eea",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
+    marginLeft: 5,
+  },
+  rightButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  skipButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginRight: 15,
+  },
+  skipButtonText: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 16,
+  },
+  nextButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    paddingHorizontal: 25,
+    paddingVertical: 15,
+    borderRadius: 25,
+  },
+  disabledButton: {
+    backgroundColor: "rgba(255,255,255,0.3)",
+  },
+  nextButtonText: {
+    color: "#667eea",
+    fontSize: 16,
+    fontWeight: "600",
+    marginRight: 5,
   },
 });
 

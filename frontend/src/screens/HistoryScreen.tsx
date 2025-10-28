@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { NewsArticle } from '../types';
-import { NewsService } from '../services/NewsService';
+import { NewsService } from '../services/newsService';
 
 interface HistoryScreenProps {
   navigation: any;

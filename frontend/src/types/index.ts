@@ -11,6 +11,10 @@ export interface NewsArticle {
   author: string;
   readTime: number;
   credits: number;
+  trendingScore?: number;
+  engagementScore?: number;
+  tags?: string[];
+  relatedArticles?: string[];
 }
 
 export interface NewsPreferences {
@@ -59,4 +63,46 @@ export interface CreditsContextType {
   credits: number;
   addCredits: (amount: number) => void;
   deductCredits: (amount: number) => void;
+}
+
+export type ViewMode = "card" | "newspaper" | "vertical" | "audio";
+
+export interface ReadingMode {
+  mode: ViewMode;
+  autoScroll: boolean;
+  fontSize: "small" | "medium" | "large";
+  darkMode: boolean;
+}
+
+export interface AudioSettings {
+  enabled: boolean;
+  voice: string;
+  speed: number;
+  pitch: number;
+}
+
+export interface UserInteraction {
+  articleId: string;
+  liked: boolean;
+  disliked: boolean;
+  saved: boolean;
+  shared: boolean;
+  readTime: number;
+  timestamp: string;
+}
+
+export interface NotificationSettings {
+  dailyDigest: boolean;
+  breakingNews: boolean;
+  personalizedAlerts: boolean;
+  pushNotifications: boolean;
+}
+
+export interface AppSettings {
+  readingMode: ReadingMode;
+  audioSettings: AudioSettings;
+  notifications: NotificationSettings;
+  offlineMode: boolean;
+  autoRefresh: boolean;
+  refreshInterval: number; // in minutes
 }
